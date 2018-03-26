@@ -3,8 +3,9 @@ class Cell {
 	// when revealed. And be another color or flagged if 
 	// not revealed.
 	constructor (pos, width) {
-		this.bee = Math.random() < 0.3 ? true : false;
-		this.revealed = true;
+		this.bee = Math.random() < 0.1 ? true : false;
+		this.revealed = false;
+		this.flagged = false;
 		this.width = width;
 		this.pos = pos;
 		this.neighborBees = null;
@@ -35,7 +36,28 @@ class Cell {
 
 	reveal () {
 		this.revealed = true;
-		this.neighborBees = this.countNeighborBees();
+		
+		// flood fill cells that have neighborBees = 0;
+		if (this.neighborBees == 0)
+			this.floodfill();
+	}
+
+	floodfill () {
+		var row = Math.floor(this.pos.y / cellSize);
+		var col = Math.floor(this.pos.x / cellSize);
+		for (var i = -1 ; i <= 1; i++) {
+			for (var j = -1 ; j <= 1; j++) {
+				// Check for array out of bound
+				var r = row + i;
+				var c = col + j;
+				if ( r > -1 && r < grid.length && c > -1 && c < grid.length) {
+					var neighbor = grid[r][c];
+
+					if (!neighbor.bee && !neighbor.revealed)
+						neighbor.reveal();
+				}
+			}
+		}
 	}
 
 	// Render the cell
@@ -44,18 +66,27 @@ class Cell {
 		var ctx = canvas.getContext('2d');
 
 		if (this.revealed) {
-			ctx.fillStyle = 'beige';
+			ctx.fillStyle = 'lightgrey';
 			ctx.fillRect(this.pos.x, 
 				this.pos.y, 
 				this.width, 
 				this.width);
 
-			ctx.fillStyle = 'black';
-			ctx.font = '24px san-serif';
-			ctx.textAlign = 'center';
-			ctx.fillText(this.neighborBees, 
-				this.pos.x + this.width/2, 
-				this.pos.y + 5 + this.width/2);
+			ctx.lineWidth = '2';
+			ctx.strokeStyle = 'grey';
+			ctx.strokeRect(this.pos.x+1, 
+				this.pos.y+1, 
+				this.width-2, 
+				this.width-2);
+
+			if (this.neighborBees > 0) {
+				ctx.fillStyle = 'black';
+				ctx.font = '24px san-serif';
+				ctx.textAlign = 'center';
+				ctx.fillText(this.neighborBees, 
+					this.pos.x + this.width/2, 
+					this.pos.y + 5 + this.width/2);
+			}
 			
 
 			if (this.bee) {
@@ -72,7 +103,7 @@ class Cell {
 			}
 
 		} else {
-			ctx.fillStyle = 'lightgrey';
+			ctx.fillStyle = 'white';
 			ctx.fillRect(this.pos.x, 
 				this.pos.y, 
 				this.width, 
@@ -90,6 +121,19 @@ class Cell {
 				this.pos.y+1, 
 				this.width-2, 
 				this.width-2);
+
+			if (this.flagged) {
+				ctx.drawImage(flagImg,
+					0,
+					0,
+					flagImg.width,
+					flagImg.height,
+					this.pos.x,
+					this.pos.y,
+					this.width,
+					this.width
+					);
+			}
 		}
 	}
 }
